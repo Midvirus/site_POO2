@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useDashboard } from "@/contexts/DashboardContext";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const Routine = () => {
   const { toast } = useToast();
@@ -15,6 +17,12 @@ const Routine = () => {
   const [showExercicioModal, setShowExercicioModal] = useState(false);
   const [searchExercicio, setSearchExercicio] = useState("");
   const [selectedExercicios, setSelectedExercicios] = useState<string[]>([]);
+  
+  const [showRefeicaoModal, setShowRefeicaoModal] = useState(false);
+  const [novaRefeicao, setNovaRefeicao] = useState({
+    tipo: "",
+    horario: "",
+  });
 
   // Dados mockados - conectar com GET /api/rotinas
   const [rotina, setRotina] = useState({
@@ -85,6 +93,31 @@ const Routine = () => {
     setSearchExercicio("");
   };
 
+  const handleAdicionarRefeicao = () => {
+    if (!novaRefeicao.tipo || !novaRefeicao.horario) {
+      toast({
+        title: "Erro",
+        description: "Preencha todos os campos.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // POST /api/rotinas/add-refeicao
+    setRotina(prev => ({
+      ...prev,
+      refeicoes: [...prev.refeicoes, { tipo: novaRefeicao.tipo, totalCalorias: 0 }]
+    }));
+
+    toast({
+      title: "Refeição adicionada!",
+      description: `${novaRefeicao.tipo} adicionada à rotina.`,
+    });
+
+    setNovaRefeicao({ tipo: "", horario: "" });
+    setShowRefeicaoModal(false);
+  };
+
   return (
     <Card className="hover:shadow-lg transition-shadow">
       <CardHeader>
@@ -140,7 +173,12 @@ const Routine = () => {
           >
             + Adicionar Exercício
           </Button>
-          <Button variant="outline" size="sm" className="flex-1">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex-1"
+            onClick={() => setShowRefeicaoModal(true)}
+          >
             + Adicionar Refeição
           </Button>
         </div>
@@ -206,6 +244,56 @@ const Routine = () => {
             >
               Adicionar ({selectedExercicios.length})
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Adicionar Refeição */}
+      <Dialog open={showRefeicaoModal} onOpenChange={setShowRefeicaoModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Adicionar Nova Refeição</DialogTitle>
+            <DialogDescription>
+              Defina o tipo e horário da refeição
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="tipo">Tipo de Refeição</Label>
+              <Select value={novaRefeicao.tipo} onValueChange={(value) => setNovaRefeicao(prev => ({ ...prev, tipo: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Café da Manhã">Café da Manhã</SelectItem>
+                  <SelectItem value="Lanche da Manhã">Lanche da Manhã</SelectItem>
+                  <SelectItem value="Almoço">Almoço</SelectItem>
+                  <SelectItem value="Lanche da Tarde">Lanche da Tarde</SelectItem>
+                  <SelectItem value="Jantar">Jantar</SelectItem>
+                  <SelectItem value="Ceia">Ceia</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="horario">Horário</Label>
+              <Input
+                id="horario"
+                type="time"
+                value={novaRefeicao.horario}
+                onChange={(e) => setNovaRefeicao(prev => ({ ...prev, horario: e.target.value }))}
+              />
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" onClick={() => setShowRefeicaoModal(false)} className="flex-1">
+                Cancelar
+              </Button>
+              <Button onClick={handleAdicionarRefeicao} className="flex-1">
+                Adicionar
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
