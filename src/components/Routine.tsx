@@ -7,9 +7,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { useDashboard } from "@/contexts/DashboardContext";
 
 const Routine = () => {
   const { toast } = useToast();
+  const { addExercicios } = useDashboard();
   const [showExercicioModal, setShowExercicioModal] = useState(false);
   const [searchExercicio, setSearchExercicio] = useState("");
   const [selectedExercicios, setSelectedExercicios] = useState<string[]>([]);
@@ -22,8 +24,8 @@ const Routine = () => {
         id: "1",
         nome: "Treino de Peito",
         exercicios: [
-          { id: "1", nome: "Supino Reto", grupoMusc: "Peitoral", totalCalorias: 150 },
-          { id: "2", nome: "Crucifixo", grupoMusc: "Peitoral", totalCalorias: 120 },
+          { id: "1", nome: "Supino Reto", grupoMusc: "Peitoral", totalCalorias: 150, totalProteinas: 0 },
+          { id: "2", nome: "Crucifixo", grupoMusc: "Peitoral", totalCalorias: 120, totalProteinas: 0 },
         ]
       }
     ],
@@ -35,16 +37,16 @@ const Routine = () => {
 
   // Lista de exercícios disponíveis - conectar com GET /api/exercicios
   const exerciciosDisponiveis = [
-    { id: "1", nome: "Supino Reto", categoria: "Peito", grupoMusc: "Peitoral", totalCalorias: 150 },
-    { id: "2", nome: "Crucifixo", categoria: "Peito", grupoMusc: "Peitoral", totalCalorias: 120 },
-    { id: "3", nome: "Agachamento", categoria: "Pernas", grupoMusc: "Quadríceps", totalCalorias: 200 },
-    { id: "4", nome: "Leg Press", categoria: "Pernas", grupoMusc: "Quadríceps", totalCalorias: 180 },
-    { id: "5", nome: "Rosca Direta", categoria: "Braços", grupoMusc: "Bíceps", totalCalorias: 100 },
-    { id: "6", nome: "Tríceps Pulley", categoria: "Braços", grupoMusc: "Tríceps", totalCalorias: 110 },
-    { id: "7", nome: "Puxada Frontal", categoria: "Costas", grupoMusc: "Dorsal", totalCalorias: 140 },
-    { id: "8", nome: "Remada Curvada", categoria: "Costas", grupoMusc: "Dorsal", totalCalorias: 160 },
-    { id: "9", nome: "Desenvolvimento", categoria: "Ombros", grupoMusc: "Deltoides", totalCalorias: 130 },
-    { id: "10", nome: "Elevação Lateral", categoria: "Ombros", grupoMusc: "Deltoides", totalCalorias: 90 },
+    { id: "1", nome: "Supino Reto", categoria: "Peito", grupoMusc: "Peitoral", totalCalorias: 150, totalProteinas: 0 },
+    { id: "2", nome: "Crucifixo", categoria: "Peito", grupoMusc: "Peitoral", totalCalorias: 120, totalProteinas: 0 },
+    { id: "3", nome: "Agachamento", categoria: "Pernas", grupoMusc: "Quadríceps", totalCalorias: 200, totalProteinas: 0 },
+    { id: "4", nome: "Leg Press", categoria: "Pernas", grupoMusc: "Quadríceps", totalCalorias: 180, totalProteinas: 0 },
+    { id: "5", nome: "Rosca Direta", categoria: "Braços", grupoMusc: "Bíceps", totalCalorias: 100, totalProteinas: 0 },
+    { id: "6", nome: "Tríceps Pulley", categoria: "Braços", grupoMusc: "Tríceps", totalCalorias: 110, totalProteinas: 0 },
+    { id: "7", nome: "Puxada Frontal", categoria: "Costas", grupoMusc: "Dorsal", totalCalorias: 140, totalProteinas: 0 },
+    { id: "8", nome: "Remada Curvada", categoria: "Costas", grupoMusc: "Dorsal", totalCalorias: 160, totalProteinas: 0 },
+    { id: "9", nome: "Desenvolvimento", categoria: "Ombros", grupoMusc: "Deltoides", totalCalorias: 130, totalProteinas: 0 },
+    { id: "10", nome: "Elevação Lateral", categoria: "Ombros", grupoMusc: "Deltoides", totalCalorias: 90, totalProteinas: 0 },
   ];
 
   const exerciciosFiltrados = exerciciosDisponiveis.filter(ex =>
@@ -69,6 +71,9 @@ const Routine = () => {
         idx === 0 ? { ...treino, exercicios: [...treino.exercicios, ...novosExercicios] } : treino
       )
     }));
+
+    // Adiciona ao contexto para cálculo de calorias
+    addExercicios(novosExercicios);
 
     toast({
       title: "Exercícios adicionados!",

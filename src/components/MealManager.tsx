@@ -6,8 +6,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Apple, Plus, Search } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useDashboard } from "@/contexts/DashboardContext";
 
 const MealManager = () => {
+  const { addAlimentos } = useDashboard();
   const [selectedMeal, setSelectedMeal] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFoods, setSelectedFoods] = useState<string[]>([]);
@@ -36,6 +38,11 @@ const MealManager = () => {
 
   const handleAddFoods = () => {
     // Conectar com POST /api/refeicoes/add-comida
+    const novosAlimentos = todosAlimentos.filter(a => selectedFoods.includes(a.id));
+    
+    // Adiciona ao contexto para cálculo de calorias
+    addAlimentos(novosAlimentos);
+
     toast({
       title: "Alimentos adicionados!",
       description: `${selectedFoods.length} alimento(s) adicionado(s) à refeição.`,

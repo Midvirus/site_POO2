@@ -2,14 +2,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { BarChart3, TrendingUp, Flame, Activity } from "lucide-react";
+import { useDashboard } from "@/contexts/DashboardContext";
 
 const Reports = () => {
-  // Dados mockados - conectar com GET /api/reports/calories-summary
-  const caloriesSummary = {
-    consumed: 1300,
-    spent: 2200,
-    basal: 1800,
-  };
+  const { getTotalCaloriasConsumed, getTotalCaloriasSpent, tmb } = useDashboard();
+
+  // Calcula valores baseados nos exercícios e alimentos adicionados
+  const consumed = getTotalCaloriasConsumed();
+  const spent = getTotalCaloriasSpent();
 
   // Conectar com GET /api/reports/projection
   const projection = {
@@ -19,8 +19,8 @@ const Reports = () => {
     tendencia: "Em linha com seu objetivo de perder peso",
   };
 
-  const deficit = caloriesSummary.spent - caloriesSummary.consumed;
-  const percentConsumed = (caloriesSummary.consumed / caloriesSummary.spent) * 100;
+  const deficit = spent - consumed;
+  const percentConsumed = spent > 0 ? (consumed / spent) * 100 : 0;
 
   return (
     <Card className="hover:shadow-lg transition-shadow">
@@ -47,15 +47,15 @@ const Reports = () => {
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Calorias Consumidas</span>
-              <span className="font-semibold text-secondary">{caloriesSummary.consumed} kcal</span>
+              <span className="font-semibold text-secondary">{consumed} kcal</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Calorias Gastas</span>
-              <span className="font-semibold text-primary">{caloriesSummary.spent} kcal</span>
+              <span className="font-semibold text-primary">{spent} kcal</span>
             </div>
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>└ TMB (Basal)</span>
-              <span>{caloriesSummary.basal} kcal</span>
+              <span>{tmb} kcal</span>
             </div>
           </div>
 
