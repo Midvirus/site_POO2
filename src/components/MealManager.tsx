@@ -91,7 +91,7 @@ const MealManager = () => {
 
       {/* Modal de Adicionar Alimentos */}
       <Dialog open={selectedMeal !== null} onOpenChange={() => setSelectedMeal(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh]">
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Adicionar Alimentos - {selectedMeal}</DialogTitle>
             <DialogDescription>
@@ -99,7 +99,7 @@ const MealManager = () => {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4 flex-1 min-h-0">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -110,7 +110,7 @@ const MealManager = () => {
               />
             </div>
 
-            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+            <div className="space-y-2 overflow-y-auto flex-1 pr-2">
               {alimentosFiltrados.map((alimento) => (
                 <div
                   key={alimento.id}
