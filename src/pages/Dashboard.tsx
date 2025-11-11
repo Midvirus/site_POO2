@@ -5,6 +5,7 @@ import Routine from "@/components/Routine";
 import Objetivos from "@/components/Objetivos";
 import MealManager from "@/components/MealManager";
 import Reports from "@/components/Reports";
+import WeightHistory from "@/components/WeightHistory";
 import { DashboardProvider } from "@/contexts/DashboardContext";
 
 const Dashboard = () => {
@@ -49,6 +50,7 @@ const Dashboard = () => {
             <Objetivos />
             <MealManager />
           </div>
+          <WeightHistory />
         </main>
       </div>
     </DashboardProvider>
