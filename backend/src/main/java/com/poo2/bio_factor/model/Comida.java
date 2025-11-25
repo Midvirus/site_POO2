@@ -1,58 +1,33 @@
-public class Comida {
+package com.poo2.bio_factor.model;
 
-	private String nome;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import lombok.*;
 
-    private int calorias;
-    private int carbs;
-    private int gords;
-    private int proteinas;
-    private int quant;
+@Entity
+@Table(name = "foods")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class Food {
 
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    public void setCalorias(int calorias) {
-        this.calorias = calorias;
-    }
+    @Column(nullable = false)
+    private String name; // antigo 'nome'
 
-    public void setCarbs(int carbs) {
-        this.carbs = carbs;
-    }
+    private int calories; // antigo 'calorias'
+    private int carbs;    // antigo 'carbs'
+    private int fats;     // antigo 'gords'
+    private int protein;  // antigo 'proteinas'
+    private int quantity; // antigo 'quant' (em gramas ou unidades)
 
-    public void setGords(int gords) {
-        this.gords = gords;
-    }
-
-    public void setProteinas(int proteinas) {
-        this.proteinas = proteinas;
-    }
-
-    public void setQuant(int quant) {
-        this.quant = quant;
-    }
-
-    public String getNome() {
-        return nome;
-    }
-
-    public int getCalorias() {
-        return calorias;
-    }
-
-    public int getCarbs() {
-        return carbs;
-    }
-
-    public int getGords() {
-        return gords;
-    }
-
-    public int getProteinas() {
-        return proteinas;
-    }
-
-    public int getQuant() {
-        return quant;
-    }
+    // Relacionamento: Muitas comidas pertencem a uma Refeição
+    @ManyToOne
+    @JoinColumn(name = "meal_id")
+    @JsonIgnore // Evita loop infinito ao converter para JSON
+    private Meal meal;
 }
