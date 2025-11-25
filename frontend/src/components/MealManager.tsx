@@ -1,0 +1,254 @@
+import { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Apple, Plus, Search, X } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import { useDashboard } from "@/contexts/DashboardContext";
+import { Badge } from "@/components/ui/badge";
+
+const MealManager = () => {
+  const { addAlimentos, alimentos } = useDashboard();
+  const [selectedMeal, setSelectedMeal] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedFoods, setSelectedFoods] = useState<string[]>([]);
+  const [showAlimentosModal, setShowAlimentosModal] = useState(false);
+
+  // Dados mockados - conectar com GET /api/refeicoes/today
+  const [refeicoes, setRefeicoes] = useState([
+    { tipo: "Café da Manhã", totalCalorias: 450, comidas: [] as any[] },
+    { tipo: "Almoço", totalCalorias: 650, comidas: [] as any[] },
+    { tipo: "Jantar", totalCalorias: 0, comidas: [] as any[] },
+    { tipo: "Lanche", totalCalorias: 200, comidas: [] as any[] },
+  ]);
+
+  // Lista de alimentos - conectar com GET /api/refeicoes/comidas
+  const todosAlimentos = [
+    { id: "1", nome: "Arroz Integral", calorias: 130, proteinas: 2.7, carbs: 28, gords: 1 },
+    { id: "2", nome: "Frango Grelhado", calorias: 165, proteinas: 31, carbs: 0, gords: 3.6 },
+    { id: "3", nome: "Batata Doce", calorias: 86, proteinas: 1.6, carbs: 20, gords: 0.1 },
+    { id: "4", nome: "Ovo Cozido", calorias: 78, proteinas: 6.3, carbs: 0.6, gords: 5.3 },
+    { id: "5", nome: "Banana", calorias: 105, proteinas: 1.3, carbs: 27, gords: 0.4 },
+    { id: "6", nome: "Aveia", calorias: 68, proteinas: 2.4, carbs: 12, gords: 1.4 },
+  ];
+
+  const alimentosFiltrados = todosAlimentos.filter(a => 
+    a.nome.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleAddFoods = () => {
+    // Conectar com POST /api/refeicoes/add-comida
+    const novosAlimentos = todosAlimentos.filter(a => selectedFoods.includes(a.id));
+    
+    // Adiciona à refeição selecionada
+    setRefeicoes(prev => prev.map(ref => 
+      ref.tipo === selectedMeal 
+        ? { 
+            ...ref, 
+            comidas: [...ref.comidas, ...novosAlimentos],
+            totalCalorias: ref.totalCalorias + novosAlimentos.reduce((sum, a) => sum + a.calorias, 0)
+          }
+        : ref
+    ));
+
+    // Adiciona ao contexto para cálculo de calorias
+    addAlimentos(novosAlimentos);
+
+    toast({
+      title: "Alimentos adicionados!",
+      description: `${selectedFoods.length} alimento(s) adicionado(s) à refeição.`,
+    });
+    setSelectedMeal(null);
+    setSelectedFoods([]);
+    setSearchTerm("");
+  };
+
+  const handleRemoveFood = (refeicaoTipo: string, alimentoId: string) => {
+    setRefeicoes(prev => prev.map(ref => {
+      if (ref.tipo === refeicaoTipo) {
+        const alimentoRemovido = ref.comidas.find((c: any) => c.id === alimentoId);
+        return {
+          ...ref,
+          comidas: ref.comidas.filter((c: any) => c.id !== alimentoId),
+          totalCalorias: ref.totalCalorias - (alimentoRemovido?.calorias || 0)
+        };
+      }
+      return ref;
+    }));
+
+    toast({
+      title: "Alimento removido",
+      description: "O alimento foi removido da refeição.",
+    });
+  };
+
+  const handleViewAlimentos = (refeicaoTipo: string) => {
+    const refeicao = refeicoes.find(r => r.tipo === refeicaoTipo);
+    if (refeicao && refeicao.comidas.length > 0) {
+      setSelectedMeal(refeicaoTipo);
+      setShowAlimentosModal(true);
+    }
+  };
+
+  const toggleFood = (foodId: string) => {
+    setSelectedFoods(prev => 
+      prev.includes(foodId) 
+        ? prev.filter(id => id !== foodId)
+        : [...prev, foodId]
+    );
+  };
+
+  return (
+    <>
+      <Card className="hover:shadow-lg transition-shadow">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Apple className="h-5 w-5 text-secondary" />
+            <CardTitle>Alimentação do Dia</CardTitle>
+          </div>
+          <CardDescription>Gerencie suas refeições</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {refeicoes.map((ref, idx) => (
+            <div
+              key={idx}
+              className="p-4 border rounded-lg hover:border-secondary transition-colors"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-semibold">{ref.tipo}</h4>
+                <div className="flex gap-2">
+                  {ref.comidas.length > 0 && (
+                    <Button 
+                      size="sm" 
+                      variant="ghost"
+                      onClick={() => handleViewAlimentos(ref.tipo)}
+                    >
+                      Ver Alimentos
+                    </Button>
+                  )}
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={() => setSelectedMeal(ref.tipo)}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Adicionar
+                  </Button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">{ref.comidas.length} alimento(s)</span>
+                <span className="font-medium text-secondary">{ref.totalCalorias} kcal</span>
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Modal de Adicionar Alimentos */}
+      <Dialog open={selectedMeal !== null && !showAlimentosModal} onOpenChange={() => setSelectedMeal(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Adicionar Alimentos - {selectedMeal}</DialogTitle>
+            <DialogDescription>
+              Selecione os alimentos para adicionar à refeição
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex flex-col gap-4 flex-1 min-h-0">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar alimentos..."
+                className="pl-9"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2 overflow-y-auto flex-1 pr-2">
+              {alimentosFiltrados.map((alimento) => (
+                <div
+                  key={alimento.id}
+                  className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                  onClick={() => toggleFood(alimento.id)}
+                >
+                  <Checkbox
+                    checked={selectedFoods.includes(alimento.id)}
+                    onCheckedChange={() => toggleFood(alimento.id)}
+                  />
+                  <div className="flex-1">
+                    <h4 className="font-medium">{alimento.nome}</h4>
+                    <div className="grid grid-cols-4 gap-2 mt-1 text-xs text-muted-foreground">
+                      <span>{alimento.calorias} kcal</span>
+                      <span>{alimento.proteinas}g prot</span>
+                      <span>{alimento.carbs}g carb</span>
+                      <span>{alimento.gords}g gord</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-between items-center pt-2 border-t">
+              <span className="text-sm text-muted-foreground">
+                {selectedFoods.length} alimento(s) selecionado(s)
+              </span>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setSelectedMeal(null)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleAddFoods} disabled={selectedFoods.length === 0}>
+                  Adicionar
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Ver Alimentos */}
+      <Dialog open={showAlimentosModal} onOpenChange={setShowAlimentosModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Alimentos - {selectedMeal}</DialogTitle>
+            <DialogDescription>
+              Alimentos adicionados a esta refeição
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+            {selectedMeal && refeicoes.find(r => r.tipo === selectedMeal)?.comidas.map((alimento: any, idx: number) => (
+              <div key={idx} className="flex items-start justify-between p-3 border rounded-lg">
+                <div className="flex-1">
+                  <h4 className="font-medium">{alimento.nome}</h4>
+                  <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+                    <Badge variant="outline">{alimento.calorias} kcal</Badge>
+                    <span>{alimento.proteinas}g prot</span>
+                    <span>{alimento.carbs}g carb</span>
+                    <span>{alimento.gords}g gord</span>
+                  </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => handleRemoveFood(selectedMeal, alimento.id)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+
+          <Button onClick={() => setShowAlimentosModal(false)} className="w-full">
+            Fechar
+          </Button>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
+export default MealManager;
