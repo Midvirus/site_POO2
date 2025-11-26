@@ -24,7 +24,7 @@ const App = () => (
           <Route path="/" element={<Navigate to="/auth" replace />} />
           <Route path="/auth" element={<Auth />} />
           <Route 
-            path="/dashboard" 
+            path="/dashboard/:nome" 
             element={
               <ProtectedRoute>
                 <Dashboard />
