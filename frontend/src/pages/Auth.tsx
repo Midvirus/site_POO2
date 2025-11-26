@@ -55,7 +55,7 @@ const Auth = () => {
             toast({ title: "Login realizado!", description: `Bem-vindo, ${data.nome}` });
             
             // REDIRECIONA (Se sua página principal for /dashboard, mude aqui)
-            navigate("/"); 
+            navigate(`/Dashboard/${data.nome}`);
             
         } else {
             toast({ title: "Erro de Acesso", description: "Usuário ou senha incorretos.", variant: "destructive" });
@@ -145,7 +145,7 @@ const Auth = () => {
                   <Input 
                     id="login-email" 
                     type="text" 
-                    placeholder="admin" 
+                    placeholder="nome@email.com" 
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
                     required 
