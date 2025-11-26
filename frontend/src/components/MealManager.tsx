@@ -1,48 +1,114 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Apple, Plus, Search, X } from "lucide-react";
+import { Apple, Plus, Search, X, Save } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { Badge } from "@/components/ui/badge";
 
+// Interface para tipar os dados que vêm do Backend
+interface FoodBackend {
+  id: number;
+  name: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+  quantity: number;
+}
+
 const MealManager = () => {
-  const { addAlimentos, alimentos } = useDashboard();
+  const { addAlimentos } = useDashboard();
   const [selectedMeal, setSelectedMeal] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFoods, setSelectedFoods] = useState<string[]>([]);
   const [showAlimentosModal, setShowAlimentosModal] = useState(false);
 
-  // Dados mockados - conectar com GET /api/refeicoes/today
+  // Estado para armazenar as comidas vindas do Banco de Dados
+  const [todosAlimentos, setTodosAlimentos] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Estado local das refeições do dia
   const [refeicoes, setRefeicoes] = useState([
-    { tipo: "Café da Manhã", totalCalorias: 450, comidas: [] as any[] },
-    { tipo: "Almoço", totalCalorias: 650, comidas: [] as any[] },
+    { tipo: "Café da Manhã", totalCalorias: 0, comidas: [] as any[] },
+    { tipo: "Almoço", totalCalorias: 0, comidas: [] as any[] },
     { tipo: "Jantar", totalCalorias: 0, comidas: [] as any[] },
-    { tipo: "Lanche", totalCalorias: 200, comidas: [] as any[] },
+    { tipo: "Lanche", totalCalorias: 0, comidas: [] as any[] },
   ]);
 
-  // Lista de alimentos - conectar com GET /api/refeicoes/comidas
-  const todosAlimentos = [
-    { id: "1", nome: "Arroz Integral", calorias: 130, proteinas: 2.7, carbs: 28, gords: 1 },
-    { id: "2", nome: "Frango Grelhado", calorias: 165, proteinas: 31, carbs: 0, gords: 3.6 },
-    { id: "3", nome: "Batata Doce", calorias: 86, proteinas: 1.6, carbs: 20, gords: 0.1 },
-    { id: "4", nome: "Ovo Cozido", calorias: 78, proteinas: 6.3, carbs: 0.6, gords: 5.3 },
-    { id: "5", nome: "Banana", calorias: 105, proteinas: 1.3, carbs: 27, gords: 0.4 },
-    { id: "6", nome: "Aveia", calorias: 68, proteinas: 2.4, carbs: 12, gords: 1.4 },
-  ];
+  // --- 1. BUSCAR COMIDAS DO BACKEND (GET) ---
+  const fetchFoods = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("http://localhost:8080/api/foods");
+      if (response.ok) {
+        const data: FoodBackend[] = await response.json();
+        // Mapeia do Inglês (Backend) para Português (Frontend)
+        const alimentosFormatados = data.map(item => ({
+          id: item.id.toString(),
+          nome: item.name,
+          calorias: item.calories,
+          proteinas: item.protein,
+          carbs: item.carbs,
+          gords: item.fats
+        }));
+        setTodosAlimentos(alimentosFormatados);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar alimentos:", error);
+      toast({ title: "Erro", description: "Falha ao conectar com o servidor.", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Carrega as comidas assim que o componente abre
+  useEffect(() => {
+    fetchFoods();
+  }, []);
+
+  // --- 2. CRIAR NOVA COMIDA NO BACKEND (POST) ---
+  const handleCreateNewFood = async () => {
+    if (!searchTerm) return;
+
+    const newFood = {
+      name: searchTerm,
+      calories: 100, // Valores padrão para teste (depois você pode criar um form completo)
+      carbs: 10,
+      protein: 10,
+      fats: 5,
+      quantity: 100
+    };
+
+    try {
+      const response = await fetch("http://localhost:8080/api/foods", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newFood)
+      });
+
+      if (response.ok) {
+        toast({ title: "Sucesso!", description: `Alimento "${searchTerm}" salvo no banco de dados.` });
+        fetchFoods(); // Recarrega a lista
+        setSearchTerm(""); // Limpa a busca
+      } else {
+        toast({ title: "Erro", description: "Não foi possível salvar.", variant: "destructive" });
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const alimentosFiltrados = todosAlimentos.filter(a => 
     a.nome.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleAddFoods = () => {
-    // Conectar com POST /api/refeicoes/add-comida
     const novosAlimentos = todosAlimentos.filter(a => selectedFoods.includes(a.id));
     
-    // Adiciona à refeição selecionada
     setRefeicoes(prev => prev.map(ref => 
       ref.tipo === selectedMeal 
         ? { 
@@ -53,7 +119,6 @@ const MealManager = () => {
         : ref
     ));
 
-    // Adiciona ao contexto para cálculo de calorias
     addAlimentos(novosAlimentos);
 
     toast({
@@ -108,7 +173,7 @@ const MealManager = () => {
             <Apple className="h-5 w-5 text-secondary" />
             <CardTitle>Alimentação do Dia</CardTitle>
           </div>
-          <CardDescription>Gerencie suas refeições</CardDescription>
+          <CardDescription>Gerencie suas refeições (Conectado ao DB)</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {refeicoes.map((ref, idx) => (
@@ -131,7 +196,10 @@ const MealManager = () => {
                   <Button 
                     size="sm" 
                     variant="ghost"
-                    onClick={() => setSelectedMeal(ref.tipo)}
+                    onClick={() => {
+                      setSelectedMeal(ref.tipo);
+                      fetchFoods(); // Garante lista atualizada ao abrir
+                    }}
                   >
                     <Plus className="h-4 w-4 mr-1" />
                     Adicionar
@@ -153,22 +221,38 @@ const MealManager = () => {
           <DialogHeader>
             <DialogTitle>Adicionar Alimentos - {selectedMeal}</DialogTitle>
             <DialogDescription>
-              Selecione os alimentos para adicionar à refeição
+              Busque no banco de dados ou cadastre um novo.
             </DialogDescription>
           </DialogHeader>
           
           <div className="flex flex-col gap-4 flex-1 min-h-0">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar alimentos..."
-                className="pl-9"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar alimentos (ex: Banana)..."
+                  className="pl-9"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              {/* Botão para Criar Comida no Banco se não existir */}
+              <Button onClick={handleCreateNewFood} variant="secondary" title="Cria um alimento genérico com este nome">
+                <Save className="h-4 w-4 mr-2" />
+                Cadastrar Novo
+              </Button>
             </div>
 
             <div className="space-y-2 overflow-y-auto flex-1 pr-2">
+              {isLoading && <p className="text-center text-muted-foreground">Carregando do banco...</p>}
+              
+              {!isLoading && alimentosFiltrados.length === 0 && (
+                <div className="text-center py-4 text-muted-foreground">
+                  <p>Nenhum alimento encontrado.</p>
+                  <p className="text-sm">Digite um nome acima e clique em "Cadastrar Novo" para salvar no Banco de Dados.</p>
+                </div>
+              )}
+
               {alimentosFiltrados.map((alimento) => (
                 <div
                   key={alimento.id}
@@ -201,7 +285,7 @@ const MealManager = () => {
                   Cancelar
                 </Button>
                 <Button onClick={handleAddFoods} disabled={selectedFoods.length === 0}>
-                  Adicionar
+                  Adicionar à Refeição
                 </Button>
               </div>
             </div>
@@ -214,9 +298,6 @@ const MealManager = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Alimentos - {selectedMeal}</DialogTitle>
-            <DialogDescription>
-              Alimentos adicionados a esta refeição
-            </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-2 max-h-[60vh] overflow-y-auto">
