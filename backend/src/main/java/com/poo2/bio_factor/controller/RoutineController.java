@@ -14,7 +14,7 @@ import java.util.List;
 public class RoutineController {
 
     @Autowired
-    private RoutineService routineService;
+    private RoutineService routineService; // Usamos o Service, não o Repository direto
 
     @GetMapping
     public List<Routine> getAll() {
@@ -32,10 +32,9 @@ public class RoutineController {
         return ResponseEntity.noContent().build();
     }
 
+    // Endpoint de busca por objetivo (Usa o Service corretamente agora)
     @GetMapping("/search")
     public Routine getByGoal(@RequestParam String goal) {
-        List<Routine> routines = routineRepository.findByGoal(goal);
-        if (routines.isEmpty()) return null;
-        return routines.get(0);
+        return routineService.getRoutineByGoal(goal);
     }
 }
