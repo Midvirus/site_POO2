@@ -7,8 +7,10 @@ import MealManager from "@/components/MealManager";
 import Reports from "@/components/Reports";
 import WeightHistory from "@/components/WeightHistory";
 import { DashboardProvider } from "@/contexts/DashboardContext";
+import { useParams } from "react-router-dom";
 
 const Dashboard = () => {
+  const { nome } = useParams();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -25,7 +27,7 @@ const Dashboard = () => {
             <div className="flex items-center gap-2">
               <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-secondary" />
               <div>
-                <h2 className="text-sm font-semibold">Bem-vindo, Usuário</h2>
+                <h2 className="text-sm font-semibold">Bem-vindo, {nome}</h2>
                 <p className="text-xs text-muted-foreground">Seus treinos de hoje</p>
               </div>
             </div>
