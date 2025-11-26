@@ -1,62 +1,103 @@
-import { createContext, useContext, useState, ReactNode } from "react";
-import { Exercicio, Comida } from "@/types";
+import { createContext, useContext, useState, ReactNode, useEffect } from "react";
+
+interface Food {
+  id: string | number;
+  nome: string;
+  calorias: number;
+  [key: string]: any;
+}
+
+interface Exercise {
+  id: string | number;
+  name: string;
+  type: string;
+  sets?: number;
+  reps?: number;
+  duration?: number;
+  totalCalorias?: number; // Para compatibilidade
+  calories?: number;      // Para compatibilidade
+  [key: string]: any;
+}
 
 interface DashboardContextType {
-  exercicios: Exercicio[];
-  alimentos: Comida[];
+  exercicios: Exercise[];
+  alimentos: Food[];
   tmb: number;
-  addExercicios: (exercicios: Exercicio[]) => void;
-  addAlimentos: (alimentos: Comida[]) => void;
+  addExercicios: (items: Exercise[]) => void;
+  removeExercicio: (id: number | string) => void; // <--- NOVA FUNÇÃO
+  addAlimentos: (items: Food[]) => void;
+  removeAlimento: (id: number | string) => void;  // <--- NOVA FUNÇÃO
   getTotalCaloriasConsumed: () => number;
   getTotalCaloriasSpent: () => number;
 }
 
-const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
+const DashboardContext = createContext<DashboardContextType>({} as DashboardContextType);
 
 export const DashboardProvider = ({ children }: { children: ReactNode }) => {
-  const [exercicios, setExercicios] = useState<Exercicio[]>([]);
-  const [alimentos, setAlimentos] = useState<Comida[]>([]);
-  
-  // TMB mockado (Idealmente viria do usuário)
-  const tmb = 1800;
+  // Inicializa buscando do LocalStorage se existir, senão array vazio
+  const [alimentos, setAlimentos] = useState<Food[]>(() => {
+    const saved = localStorage.getItem("dashboard_alimentos");
+    return saved ? JSON.parse(saved) : [];
+  });
 
-  const addExercicios = (novosExercicios: Exercicio[]) => {
-    setExercicios(prev => [...prev, ...novosExercicios]);
+  const [exercicios, setExercicios] = useState<Exercise[]>(() => {
+    const saved = localStorage.getItem("dashboard_exercicios");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [tmb, setTmb] = useState(1800);
+
+  // --- EFEITOS PARA SALVAR NO LOCALSTORAGE (Persistência no F5) ---
+  useEffect(() => {
+    localStorage.setItem("dashboard_alimentos", JSON.stringify(alimentos));
+  }, [alimentos]);
+
+  useEffect(() => {
+    localStorage.setItem("dashboard_exercicios", JSON.stringify(exercicios));
+  }, [exercicios]);
+
+
+  // --- FUNÇÕES DE ADICIONAR ---
+  const addExercicios = (items: Exercise[]) => {
+    setExercicios((prev) => [...prev, ...items]);
   };
 
-  const addAlimentos = (novosAlimentos: Comida[]) => {
-    setAlimentos(prev => [...prev, ...novosAlimentos]);
+  const addAlimentos = (items: Food[]) => {
+    setAlimentos((prev) => [...prev, ...items]);
   };
 
-  // --- CORREÇÃO 1: Blindagem no Consumo ---
+  // --- FUNÇÕES DE REMOVER (Correção do Bug) ---
+  const removeExercicio = (id: number | string) => {
+    setExercicios((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const removeAlimento = (id: number | string) => {
+    setAlimentos((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  // --- CÁLCULOS ---
   const getTotalCaloriasConsumed = () => {
-    return alimentos.reduce((total, alimento) => {
-      // Garante que é número. Se for undefined/null, vira 0.
-      const cal = Number(alimento.calorias) || 0;
+    return alimentos.reduce((total, item) => {
+      const cal = Number(item.calorias) || Number(item.calories) || 0;
       return total + cal;
     }, 0);
   };
 
-  // --- CORREÇÃO 2: Blindagem no Gasto (A principal causa do NaN) ---
   const getTotalCaloriasSpent = () => {
-    const caloriasExercicios = exercicios.reduce((total, ex: any) => {
-      // 1. Tenta pegar o valor pronto
-      let cal = Number(ex.totalCalorias);
+    const caloriasExercicios = exercicios.reduce((total, ex) => {
+      // Tenta pegar o valor pronto de vários campos possíveis
+      let cal = Number(ex.totalCalorias) || Number(ex.calories);
 
-      // 2. Se não existir (NaN ou 0), calcula uma estimativa agora
+      // Se não tiver (NaN ou 0), calcula estimativa
       if (!cal) {
-        // Se for Anaeróbico (Musculação), usa Séries
         if (ex.type === 'ANAEROBIC' || ex.tipo === 'ANAEROBIC') {
-            const sets = Number(ex.sets) || 3; // Padrão 3 séries
-            cal = sets * 15; // Estima 15kcal por série
-        } 
-        // Se for Aeróbico (Cardio), usa Duração
-        else {
-            const duration = Number(ex.duration) || 20; // Padrão 20 min
-            cal = duration * 8; // Estima 8kcal por minuto
+            const sets = Number(ex.sets) || 3;
+            cal = sets * 15; 
+        } else {
+            const duration = Number(ex.duration) || 20;
+            cal = duration * 8;
         }
       }
-
       return total + (cal || 0);
     }, 0);
 
@@ -64,26 +105,20 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <DashboardContext.Provider
-      value={{
-        exercicios,
-        alimentos,
-        tmb,
-        addExercicios,
-        addAlimentos,
-        getTotalCaloriasConsumed,
-        getTotalCaloriasSpent,
-      }}
-    >
+    <DashboardContext.Provider value={{
+      exercicios,
+      alimentos,
+      tmb,
+      addExercicios,
+      removeExercicio, // Exportando a função nova
+      addAlimentos,
+      removeAlimento,  // Exportando a função nova
+      getTotalCaloriasConsumed,
+      getTotalCaloriasSpent,
+    }}>
       {children}
     </DashboardContext.Provider>
   );
 };
 
-export const useDashboard = () => {
-  const context = useContext(DashboardContext);
-  if (!context) {
-    throw new Error("useDashboard must be used within DashboardProvider");
-  }
-  return context;
-};
+export const useDashboard = () => useContext(DashboardContext);
