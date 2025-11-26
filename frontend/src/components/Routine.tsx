@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Dumbbell, Utensils, Search } from "lucide-react";
+import { Calendar, Dumbbell, Utensils, Search, Save, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -11,112 +11,149 @@ import { useDashboard } from "@/contexts/DashboardContext";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+// Tipagem dos dados vindos do Java
+interface Exercise {
+  id: number;
+  name: string;
+  muscleGroup: string;
+  type: string;
+  sets?: number;
+  reps?: number;
+  duration?: number;
+}
+
+interface Workout {
+  id: number;
+  name: string;
+  description: string;
+  exercises: Exercise[];
+}
+
+interface RoutineData {
+  id: number;
+  name: string;
+  goal: string;
+  workouts: Workout[];
+}
+
 const Routine = () => {
   const { toast } = useToast();
   const { addExercicios } = useDashboard();
-  const [showExercicioModal, setShowExercicioModal] = useState(false);
-  const [searchExercicio, setSearchExercicio] = useState("");
-  const [selectedExercicios, setSelectedExercicios] = useState<string[]>([]);
   
-  const [showRefeicaoModal, setShowRefeicaoModal] = useState(false);
-  const [novaRefeicao, setNovaRefeicao] = useState({
-    tipo: "",
-    horario: "",
-  });
+  // Estados de Dados
+  const [rotina, setRotina] = useState<RoutineData | null>(null);
+  const [bibliotecaExercicios, setBibliotecaExercicios] = useState<Exercise[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Dados mockados - conectar com GET /api/rotinas
-  const [rotina, setRotina] = useState({
-    diaSem: "Segunda-feira",
-    treinos: [
-      {
-        id: "1",
-        nome: "Treino de Peito",
-        exercicios: [
-          { id: "1", nome: "Supino Reto", grupoMusc: "Peitoral", totalCalorias: 150, totalProteinas: 0 },
-          { id: "2", nome: "Crucifixo", grupoMusc: "Peitoral", totalCalorias: 120, totalProteinas: 0 },
-        ]
+  // Estados de UI
+  const [showExercicioModal, setShowExercicioModal] = useState(false);
+  const [activeWorkoutId, setActiveWorkoutId] = useState<number | null>(null); // Qual treino estamos editando?
+  const [searchExercicio, setSearchExercicio] = useState("");
+  const [selectedExercicios, setSelectedExercicios] = useState<number[]>([]);
+
+  // --- 1. BUSCAR DADOS INICIAIS ---
+  const fetchRoutineAndLibrary = async () => {
+    try {
+      // Busca a primeira rotina (já que usuário não cria, pega a padrão)
+      const routineRes = await fetch("http://localhost:8080/api/routines");
+      const routineData = await routineRes.json();
+      
+      if (routineData.length > 0) {
+        setRotina(routineData[0]); // Pega a primeira rotina encontrada
       }
-    ],
-    refeicoes: [
-      { tipo: "Café da Manhã", totalCalorias: 450 },
-      { tipo: "Almoço", totalCalorias: 650 },
-    ]
-  });
 
-  // Lista de exercícios disponíveis - conectar com GET /api/exercicios
-  const exerciciosDisponiveis = [
-    { id: "1", nome: "Supino Reto", categoria: "Peito", grupoMusc: "Peitoral", totalCalorias: 150, totalProteinas: 0 },
-    { id: "2", nome: "Crucifixo", categoria: "Peito", grupoMusc: "Peitoral", totalCalorias: 120, totalProteinas: 0 },
-    { id: "3", nome: "Agachamento", categoria: "Pernas", grupoMusc: "Quadríceps", totalCalorias: 200, totalProteinas: 0 },
-    { id: "4", nome: "Leg Press", categoria: "Pernas", grupoMusc: "Quadríceps", totalCalorias: 180, totalProteinas: 0 },
-    { id: "5", nome: "Rosca Direta", categoria: "Braços", grupoMusc: "Bíceps", totalCalorias: 100, totalProteinas: 0 },
-    { id: "6", nome: "Tríceps Pulley", categoria: "Braços", grupoMusc: "Tríceps", totalCalorias: 110, totalProteinas: 0 },
-    { id: "7", nome: "Puxada Frontal", categoria: "Costas", grupoMusc: "Dorsal", totalCalorias: 140, totalProteinas: 0 },
-    { id: "8", nome: "Remada Curvada", categoria: "Costas", grupoMusc: "Dorsal", totalCalorias: 160, totalProteinas: 0 },
-    { id: "9", nome: "Desenvolvimento", categoria: "Ombros", grupoMusc: "Deltoides", totalCalorias: 130, totalProteinas: 0 },
-    { id: "10", nome: "Elevação Lateral", categoria: "Ombros", grupoMusc: "Deltoides", totalCalorias: 90, totalProteinas: 0 },
-  ];
+      // Busca a biblioteca de exercícios (templates)
+      const exercisesRes = await fetch("http://localhost:8080/api/exercises/templates");
+      const exercisesData = await exercisesRes.json();
+      setBibliotecaExercicios(exercisesData);
 
-  const exerciciosFiltrados = exerciciosDisponiveis.filter(ex =>
-    ex.nome.toLowerCase().includes(searchExercicio.toLowerCase()) ||
-    ex.categoria.toLowerCase().includes(searchExercicio.toLowerCase()) ||
-    ex.grupoMusc.toLowerCase().includes(searchExercicio.toLowerCase())
+    } catch (error) {
+      console.error("Erro ao carregar dados", error);
+      toast({ title: "Erro", description: "Falha ao carregar rotina.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRoutineAndLibrary();
+  }, []);
+
+
+  // --- 2. SALVAR EXERCÍCIOS NO TREINO ---
+  const handleAdicionarExercicios = async () => {
+    if (!rotina || activeWorkoutId === null) return;
+
+    // Encontra os objetos completos dos exercícios selecionados na biblioteca
+    const novosExerciciosModelo = bibliotecaExercicios.filter(ex => selectedExercicios.includes(ex.id));
+    
+    // Atualiza o estado localmente primeiro (Optimistic UI)
+    const rotinaAtualizada = { ...rotina };
+    const treinoAlvo = rotinaAtualizada.workouts.find(w => w.id === activeWorkoutId);
+
+    if (treinoAlvo) {
+      // Adiciona os novos exercícios à lista existente do treino
+      // Nota: No mundo real, deveríamos clonar o exercício no backend com novos IDs.
+      // Aqui vamos mandar a rotina inteira para o backend atualizar.
+      
+      const novosParaAdicionar = novosExerciciosModelo.map(modelo => ({
+        ...modelo,
+        id: undefined, // Remove ID para o backend criar um novo registro vinculado ao treino
+        workout: { id: activeWorkoutId } // Vincula ao treino
+      }));
+
+      // A gambiarra elegante: Atualizamos a rotina inteira via PUT/POST
+      // Mas como a estrutura é complexa, vamos apenas atualizar o estado local e mandar salvar
+      treinoAlvo.exercises = [...treinoAlvo.exercises, ...novosExerciciosModelo]; 
+      setRotina(rotinaAtualizada);
+      
+      // Enviar para o Backend
+      try {
+        const response = await fetch("http://localhost:8080/api/routines", {
+          method: "POST", // O Controller usa POST para salvar/atualizar
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(rotinaAtualizada)
+        });
+
+        if (response.ok) {
+           toast({ title: "Sucesso", description: "Treino atualizado!" });
+           fetchRoutineAndLibrary(); // Recarrega para pegar os IDs reais
+        }
+      } catch (error) {
+        toast({ title: "Erro", description: "Falha ao salvar treino.", variant: "destructive" });
+      }
+    }
+
+    addExercicios(novosExerciciosModelo); // Para o Dashboard
+    setSelectedExercicios([]);
+    setShowExercicioModal(false);
+    setActiveWorkoutId(null);
+  };
+
+  // Filtragem da biblioteca no modal
+  const exerciciosFiltrados = bibliotecaExercicios.filter(ex =>
+    ex.name.toLowerCase().includes(searchExercicio.toLowerCase()) ||
+    ex.muscleGroup.toLowerCase().includes(searchExercicio.toLowerCase())
   );
 
-  const handleToggleExercicio = (id: string) => {
+  const handleToggleExercicio = (id: number) => {
     setSelectedExercicios(prev =>
       prev.includes(id) ? prev.filter(exId => exId !== id) : [...prev, id]
     );
   };
 
-  const handleAdicionarExercicios = () => {
-    // POST /api/rotinas/add-treino com exercícios selecionados
-    const novosExercicios = exerciciosDisponiveis.filter(ex => selectedExercicios.includes(ex.id));
-    
-    setRotina(prev => ({
-      ...prev,
-      treinos: prev.treinos.map((treino, idx) => 
-        idx === 0 ? { ...treino, exercicios: [...treino.exercicios, ...novosExercicios] } : treino
-      )
-    }));
-
-    // Adiciona ao contexto para cálculo de calorias
-    addExercicios(novosExercicios);
-
-    toast({
-      title: "Exercícios adicionados!",
-      description: `${novosExercicios.length} exercício(s) adicionado(s) ao treino.`,
-    });
-
-    setSelectedExercicios([]);
-    setShowExercicioModal(false);
-    setSearchExercicio("");
+  const openModalForWorkout = (workoutId: number) => {
+      setActiveWorkoutId(workoutId);
+      setShowExercicioModal(true);
   };
 
-  const handleAdicionarRefeicao = () => {
-    if (!novaRefeicao.tipo || !novaRefeicao.horario) {
-      toast({
-        title: "Erro",
-        description: "Preencha todos os campos.",
-        variant: "destructive",
-      });
-      return;
-    }
+  if (loading) {
+      return <div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div>;
+  }
 
-    // POST /api/rotinas/add-refeicao
-    setRotina(prev => ({
-      ...prev,
-      refeicoes: [...prev.refeicoes, { tipo: novaRefeicao.tipo, totalCalorias: 0 }]
-    }));
-
-    toast({
-      title: "Refeição adicionada!",
-      description: `${novaRefeicao.tipo} adicionada à rotina.`,
-    });
-
-    setNovaRefeicao({ tipo: "", horario: "" });
-    setShowRefeicaoModal(false);
-  };
+  if (!rotina) {
+      return <div className="text-center p-8">Nenhuma rotina encontrada. Reinicie o servidor para gerar a padrão.</div>;
+  }
 
   return (
     <Card className="hover:shadow-lg transition-shadow">
@@ -124,73 +161,58 @@ const Routine = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Calendar className="h-5 w-5 text-primary" />
-            <CardTitle>Rotina de Hoje</CardTitle>
+            <CardTitle>{rotina.name}</CardTitle>
           </div>
-          <Badge variant="outline">{rotina.diaSem}</Badge>
+          <Badge variant="outline">{rotina.goal}</Badge>
         </div>
-        <CardDescription>Seus treinos e refeições planejadas</CardDescription>
+        <CardDescription>Gerencie seus treinos semanais</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Treinos */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm font-semibold">
-            <Dumbbell className="h-4 w-4 text-primary" />
-            <span>Treinos</span>
-          </div>
-          {rotina.treinos.map((treino) => (
-            <div key={treino.id} className="pl-6 space-y-2">
-              <p className="font-medium">{treino.nome}</p>
-              {treino.exercicios.map((ex, idx) => (
-                <div key={idx} className="flex justify-between text-sm text-muted-foreground">
-                  <span>• {ex.nome} ({ex.grupoMusc})</span>
-                  <span className="text-primary">{ex.totalCalorias} kcal</span>
+      
+      <CardContent className="space-y-6">
+        {/* Lista de Treinos (A, B, C...) */}
+        {rotina.workouts.map((treino) => (
+            <div key={treino.id} className="border rounded-lg p-4 space-y-3">
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h3 className="font-semibold text-lg">{treino.name}</h3>
+                        <p className="text-sm text-muted-foreground">{treino.description}</p>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => openModalForWorkout(treino.id)}>
+                        <Dumbbell className="h-4 w-4 mr-2" />
+                        Adicionar / Editar
+                    </Button>
                 </div>
-              ))}
-            </div>
-          ))}
-        </div>
 
-        {/* Refeições */}
-        <div className="space-y-2 pt-2 border-t">
-          <div className="flex items-center gap-2 text-sm font-semibold">
-            <Utensils className="h-4 w-4 text-secondary" />
-            <span>Refeições</span>
-          </div>
-          {rotina.refeicoes.map((ref, idx) => (
-            <div key={idx} className="pl-6 flex justify-between text-sm">
-              <span>• {ref.tipo}</span>
-              <span className="text-secondary font-medium">{ref.totalCalorias} kcal</span>
+                {/* Lista de Exercícios DENTRO do Treino */}
+                <div className="pl-4 border-l-2 border-muted space-y-2">
+                    {treino.exercises.length === 0 && (
+                        <p className="text-sm text-muted-foreground italic">Nenhum exercício neste treino.</p>
+                    )}
+                    {treino.exercises.map((ex, idx) => (
+                        <div key={idx} className="flex justify-between text-sm bg-muted/30 p-2 rounded">
+                            <span className="font-medium">{ex.name}</span>
+                            <div className="text-muted-foreground text-xs flex gap-3">
+                                <Badge variant="secondary" className="text-[10px]">{ex.muscleGroup}</Badge>
+                                {ex.type === 'ANAEROBIC' ? (
+                                    <span>{ex.sets}x{ex.reps} • {ex.id ? 'Carga' : 'Modelo'}</span>
+                                ) : (
+                                    <span>{ex.duration} min</span>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
-          ))}
-        </div>
-
-        <div className="flex gap-2 pt-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex-1"
-            onClick={() => setShowExercicioModal(true)}
-          >
-            + Adicionar Exercício
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex-1"
-            onClick={() => setShowRefeicaoModal(true)}
-          >
-            + Adicionar Refeição
-          </Button>
-        </div>
+        ))}
       </CardContent>
 
-      {/* Modal de Adicionar Exercícios */}
+      {/* Modal de Seleção de Exercícios (Biblioteca) */}
       <Dialog open={showExercicioModal} onOpenChange={setShowExercicioModal}>
         <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Adicionar Exercícios ao Treino</DialogTitle>
+            <DialogTitle>Biblioteca de Exercícios</DialogTitle>
             <DialogDescription>
-              Selecione os exercícios que deseja adicionar ao seu treino de hoje
+              Selecione exercícios para adicionar ao treino.
             </DialogDescription>
           </DialogHeader>
           
@@ -198,14 +220,14 @@ const Routine = () => {
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar exercícios por nome, categoria ou grupo muscular..."
+                placeholder="Buscar (ex: Supino, Peito)..."
                 value={searchExercicio}
                 onChange={(e) => setSearchExercicio(e.target.value)}
                 className="pl-10"
               />
             </div>
 
-            <div className="space-y-2 overflow-y-auto flex-1 pr-2">
+            <div className="space-y-2 overflow-y-auto flex-1 pr-2 max-h-[400px]">
               {exerciciosFiltrados.map((exercicio) => (
                 <div
                   key={exercicio.id}
@@ -217,15 +239,17 @@ const Routine = () => {
                     onCheckedChange={() => handleToggleExercicio(exercicio.id)}
                   />
                   <div className="flex-1">
-                    <p className="font-medium">{exercicio.nome}</p>
+                    <p className="font-medium">{exercicio.name}</p>
                     <div className="flex gap-2 text-sm text-muted-foreground mt-1">
                       <Badge variant="outline" className="text-xs">
-                        {exercicio.categoria}
+                        {exercicio.muscleGroup}
                       </Badge>
                       <span>•</span>
-                      <span>{exercicio.grupoMusc}</span>
-                      <span>•</span>
-                      <span className="text-primary font-medium">{exercicio.totalCalorias} kcal</span>
+                      {exercicio.type === 'ANAEROBIC' ? (
+                         <span>Séries: {exercicio.sets} | Reps: {exercicio.reps}</span>
+                      ) : (
+                         <span>Cardio</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -242,58 +266,8 @@ const Routine = () => {
               disabled={selectedExercicios.length === 0}
               className="flex-1"
             >
-              Adicionar ({selectedExercicios.length})
+              Adicionar ao Treino ({selectedExercicios.length})
             </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal de Adicionar Refeição */}
-      <Dialog open={showRefeicaoModal} onOpenChange={setShowRefeicaoModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Adicionar Nova Refeição</DialogTitle>
-            <DialogDescription>
-              Defina o tipo e horário da refeição
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="tipo">Tipo de Refeição</Label>
-              <Select value={novaRefeicao.tipo} onValueChange={(value) => setNovaRefeicao(prev => ({ ...prev, tipo: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Café da Manhã">Café da Manhã</SelectItem>
-                  <SelectItem value="Lanche da Manhã">Lanche da Manhã</SelectItem>
-                  <SelectItem value="Almoço">Almoço</SelectItem>
-                  <SelectItem value="Lanche da Tarde">Lanche da Tarde</SelectItem>
-                  <SelectItem value="Jantar">Jantar</SelectItem>
-                  <SelectItem value="Ceia">Ceia</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="horario">Horário</Label>
-              <Input
-                id="horario"
-                type="time"
-                value={novaRefeicao.horario}
-                onChange={(e) => setNovaRefeicao(prev => ({ ...prev, horario: e.target.value }))}
-              />
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              <Button variant="outline" onClick={() => setShowRefeicaoModal(false)} className="flex-1">
-                Cancelar
-              </Button>
-              <Button onClick={handleAdicionarRefeicao} className="flex-1">
-                Adicionar
-              </Button>
-            </div>
           </div>
         </DialogContent>
       </Dialog>
