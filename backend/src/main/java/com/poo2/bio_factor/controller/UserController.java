@@ -1,45 +1,56 @@
 package com.poo2.bio_factor.controller;
 
 import com.poo2.bio_factor.dto.UserDTO;
+import com.poo2.bio_factor.dto.UserRegistrationDTO;
 import com.poo2.bio_factor.service.UserService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/users") // Base path for all user operations
-@CrossOrigin(origins = "http://localhost:5173") // Temporary CORS fix for development
+@RequestMapping("/api/users")
+@CrossOrigin(origins = "*") // Permite acesso do Front
 public class UserController {
 
     private final UserService userService;
 
-    // Dependency Injection (Spring injects the UserService)
     public UserController(UserService userService) {
         this.userService = userService;
     }
 
-    /**
-     * Handles GET requests to /api/users/{id}
-     * Retrieves a user's metrics (including BMI/BMR) as a DTO.
-     * @param id The ID of the user to retrieve.
-     * @return The UserDTO containing all profile and calculated data.
-     */
+    // 1. PEGAR USUÁRIO LOGADO (Atalho para o ID 1 para facilitar testes)
+    @GetMapping("/me")
+    public ResponseEntity<UserDTO> getCurrentUser() {
+        try {
+            // Como não temos login real ainda, assumimos que o usuário é o ID 1
+            return ResponseEntity.ok(userService.getUserMetricsById(1L));
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // 2. CADASTRAR NOVO USUÁRIO
+    @PostMapping
+    public ResponseEntity<?> registerUser(@RequestBody UserRegistrationDTO registrationDTO) {
+        try {
+            UserDTO createdUser = userService.registerUser(registrationDTO);
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
+        } catch (IllegalArgumentException e) {
+            // Erro de validação (senhas não batem, usuário existe, etc)
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao criar usuário.");
+        }
+    }
+
+    // 3. PEGAR USUÁRIO POR ID (Específico)
     @GetMapping("/{id}")
     public ResponseEntity<UserDTO> getUserMetrics(@PathVariable Long id) {
         try {
             UserDTO userDTO = userService.getUserMetricsById(id);
-            // Return 200 OK with the DTO object
             return ResponseEntity.ok(userDTO);
         } catch (RuntimeException e) {
-            // In a real application, you'd handle different exceptions (e.g., UserNotFoundException)
-            // and return a specific status like 404 NOT FOUND.
-            System.err.println(e.getMessage());
-            return ResponseEntity.notFound().build(); // Return 404 Not Found
+            return ResponseEntity.notFound().build();
         }
     }
-
-    // You will add more endpoints here later (e.g., POST for creating a user, PUT for updating)
 }
