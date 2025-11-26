@@ -13,12 +13,14 @@ const Auth = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Estados para os formulários
+  // Estados do Login
   const [loginEmail, setLoginEmail] = useState("");
-  
+  const [loginPassword, setLoginPassword] = useState("");
+
+  // Estados do Cadastro
   const [registerData, setRegisterData] = useState({
     nome: "",
-    username: "", // Usaremos o email como username para simplificar
+    username: "",
     password: "",
     birthDate: "",
     gender: "",
@@ -27,53 +29,61 @@ const Auth = () => {
     activityLevel: ""
   });
 
-  // --- LOGIN (Simulado via Backend) ---
-  // Como não temos endpoint de login real, vamos buscar o usuário 'me' ou validar se existe
-  // Para este MVP, vamos apenas simular e redirecionar se o backend estiver online.
+  // --- LOGIN REAL ---
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     
     try {
-        // Teste de conexão com o backend
-        const response = await fetch("http://localhost:8080/api/users/me");
+        const response = await fetch("http://localhost:8080/api/users/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                username: loginEmail,
+                password: loginPassword 
+            })
+        });
+
         if (response.ok) {
+            const data = await response.json();
+            
+            // Salva sessão
             localStorage.setItem("isAuthenticated", "true");
-            // Salva um ID fake ou real se tivesse login
-            localStorage.setItem("userId", "1"); 
-            toast({ title: "Login realizado!", description: "Bem-vindo de volta." });
-            navigate("/"); // Redireciona para o Dashboard (Rota raiz)
+            localStorage.setItem("userId", data.id);
+            localStorage.setItem("userName", data.nome);
+
+            toast({ title: "Login realizado!", description: `Bem-vindo, ${data.nome}` });
+            
+            // REDIRECIONA (Se sua página principal for /dashboard, mude aqui)
+            navigate("/"); 
+            
         } else {
-            toast({ title: "Erro", description: "Servidor indisponível ou usuário não encontrado.", variant: "destructive" });
+            toast({ title: "Erro de Acesso", description: "Usuário ou senha incorretos.", variant: "destructive" });
         }
     } catch (error) {
-        toast({ title: "Erro de Conexão", description: "Não foi possível conectar ao servidor.", variant: "destructive" });
+        console.error(error);
+        toast({ title: "Erro de Conexão", description: "O servidor não respondeu.", variant: "destructive" });
     } finally {
         setIsLoading(false);
     }
   };
 
-  // --- CADASTRO (Real via Backend) ---
+  // --- CADASTRO REAL ---
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Mapeamento do Nível de Atividade (Texto -> Número)
     const activityMap: Record<string, number> = {
-        "Sedentário": 1,
-        "Leve": 2,
-        "Moderado": 3,
-        "Intenso": 4,
-        "Muito Intenso": 5
+        "Sedentário": 1, "Leve": 2, "Moderado": 3, "Intenso": 4, "Muito Intenso": 5
     };
 
     const payload = {
         nome: registerData.nome,
-        username: registerData.username, // Email é o username
+        username: registerData.username,
         password: registerData.password,
-        confirmPassword: registerData.password, // Backend exige confirmação
+        confirmPassword: registerData.password,
         birthDate: registerData.birthDate,
-        gender: registerData.gender, // "M" ou "F"
+        gender: registerData.gender,
         weight: parseFloat(registerData.weight),
         height: parseFloat(registerData.height),
         activityLevel: activityMap[registerData.activityLevel] || 3
@@ -87,9 +97,8 @@ const Auth = () => {
         });
 
         if (response.ok) {
-            toast({ title: "Sucesso!", description: "Conta criada. Faça login para continuar." });
-            // Limpa o form ou muda a aba para login automaticamente
-            // document.getElementById("tab-login")?.click(); 
+            toast({ title: "Sucesso!", description: "Conta criada. Faça login." });
+            // Opcional: Limpar form ou trocar de aba
         } else {
             const errorText = await response.text();
             toast({ title: "Erro no cadastro", description: errorText, variant: "destructive" });
@@ -106,7 +115,6 @@ const Auth = () => {
       setRegisterData(prev => ({ ...prev, [id]: value }));
   };
 
-  // Handler especial para o email que vira username
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       setRegisterData(prev => ({ ...prev, username: e.target.value }));
   };
@@ -126,26 +134,33 @@ const Auth = () => {
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login" id="tab-login">Login</TabsTrigger>
+              <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="register">Cadastro</TabsTrigger>
             </TabsList>
             
             <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="login-email">Email (Admin: admin)</Label>
+                  <Label htmlFor="login-email">Email</Label>
                   <Input 
                     id="login-email" 
                     type="text" 
-                    placeholder="seu@email.com" 
+                    placeholder="admin" 
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
                     required 
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="login-password">Senha (Admin: 123456)</Label>
-                  <Input id="login-password" type="password" placeholder="••••••••" required />
+                  <Label htmlFor="login-password">Senha</Label>
+                  <Input 
+                    id="login-password" 
+                    type="password" 
+                    placeholder="••••••••" 
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    required 
+                  />
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "Entrando..." : "Entrar"}
@@ -160,7 +175,7 @@ const Auth = () => {
                   <Input id="nome" placeholder="Seu nome" value={registerData.nome} onChange={handleInputChange} required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="username">Email</Label>
+                  <Label htmlFor="username">Email (Login)</Label>
                   <Input id="username" type="text" placeholder="seu@email.com" value={registerData.username} onChange={handleEmailChange} required />
                 </div>
                 <div className="space-y-2">
