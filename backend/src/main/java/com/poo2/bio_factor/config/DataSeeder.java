@@ -24,7 +24,7 @@ public class DataSeeder {
         
         return args -> {
             
-            // --- PARTE 1: ALIMENTOS (Comidas) ---
+            // 1. ALIMENTOS
             if (foodRepository.count() == 0) {
                 foodRepository.saveAll(List.of(
                     new Food(null, "Arroz Branco (100g)", 130, 28, 0, 2, 100, null),
@@ -32,55 +32,66 @@ public class DataSeeder {
                     new Food(null, "Peito de Frango (100g)", 165, 0, 3, 31, 100, null),
                     new Food(null, "Ovo Cozido (unid)", 70, 0, 5, 6, 50, null),
                     new Food(null, "Banana Prata (unid)", 98, 26, 0, 1, 100, null),
-                    new Food(null, "Aveia em Flocos (30g)", 110, 17, 2, 4, 30, null),
-                    new Food(null, "Whey Protein (30g)", 120, 3, 1, 24, 30, null)
+                    new Food(null, "Salada de Folhas", 15, 3, 0, 1, 100, null)
                 ));
-                System.out.println("✅ Lista de Alimentos criada!");
             }
 
-            // --- PARTE 2: EXERCÍCIOS MODELO (Biblioteca) ---
-            // Usamos workout = null para indicar que são modelos para serem copiados
+            // 2. EXERCÍCIOS (BIBLIOTECA)
             if (exerciseRepository.count() == 0) {
                 exerciseRepository.saveAll(List.of(
+                    // Musculação
                     new Exercise(null, "Supino Reto", "Peito", "ANAEROBIC", 4, 10, 20.0, 0, null),
-                    new Exercise(null, "Crucifixo", "Peito", "ANAEROBIC", 3, 12, 12.0, 0, null),
                     new Exercise(null, "Agachamento Livre", "Pernas", "ANAEROBIC", 4, 10, 40.0, 0, null),
-                    new Exercise(null, "Leg Press 45", "Pernas", "ANAEROBIC", 3, 12, 100.0, 0, null),
                     new Exercise(null, "Puxada Frontal", "Costas", "ANAEROBIC", 4, 10, 35.0, 0, null),
-                    new Exercise(null, "Remada Curvada", "Costas", "ANAEROBIC", 4, 10, 30.0, 0, null),
-                    new Exercise(null, "Desenvolvimento Halteres", "Ombros", "ANAEROBIC", 3, 12, 14.0, 0, null),
-                    new Exercise(null, "Corrida Esteira", "Cardio", "AEROBIC", 0, 0, 0.0, 20, null),
-                    new Exercise(null, "Bicicleta Ergométrica", "Cardio", "AEROBIC", 0, 0, 0.0, 30, null)
+                    // Funcional / Perda de Peso
+                    new Exercise(null, "Burpees", "Corpo Todo", "ANAEROBIC", 3, 15, 0.0, 0, null),
+                    new Exercise(null, "Polichinelos", "Cardio", "AEROBIC", 0, 0, 0.0, 5, null),
+                    new Exercise(null, "Pular Corda", "Cardio", "AEROBIC", 0, 0, 0.0, 10, null),
+                    new Exercise(null, "Mountain Climbers", "Abdômen", "ANAEROBIC", 3, 20, 0.0, 0, null),
+                    // Cardio Puro
+                    new Exercise(null, "Corrida Esteira", "Cardio", "AEROBIC", 0, 0, 0.0, 30, null),
+                    new Exercise(null, "Bicicleta Ergométrica", "Cardio", "AEROBIC", 0, 0, 0.0, 45, null),
+                    new Exercise(null, "Natação", "Corpo Todo", "AEROBIC", 0, 0, 0.0, 40, null)
                 ));
-                System.out.println("✅ Biblioteca de Exercícios criada!");
             }
 
-            // --- PARTE 3: ROTINA PADRÃO ---
+            // 3. ROTINAS (3 TIPOS)
             if (routineRepository.count() == 0) {
-                Routine rotina = new Routine();
-                rotina.setName("Rotina ABC - Hipertrofia");
-                rotina.setGoal("Ganho de Massa");
+                
+                // --- ROTINA 1: GANHO DE MASSA ---
+                Routine rotinaMassa = new Routine();
+                rotinaMassa.setName("Hipertrofia Clássica");
+                rotinaMassa.setGoal("Ganho de Massa"); // ID do objetivo
+                
+                Workout massaA = new Workout(null, "Treino A - Peito/Tríceps", "Foco em carga alta", null, rotinaMassa);
+                Workout massaB = new Workout(null, "Treino B - Costas/Bíceps", "Foco em contração", null, rotinaMassa);
+                rotinaMassa.addWorkout(massaA);
+                rotinaMassa.addWorkout(massaB);
+                routineRepository.save(rotinaMassa);
 
-                // Treino A
-                Workout treinoA = new Workout();
-                treinoA.setName("Treino A - Peito e Tríceps");
-                treinoA.setDescription("Foco em empurrar");
-                rotina.addWorkout(treinoA);
+                // --- ROTINA 2: PERDA DE PESO ---
+                Routine rotinaPeso = new Routine();
+                rotinaPeso.setName("Queima de Gordura (HIIT)");
+                rotinaPeso.setGoal("Perda de Peso"); // ID do objetivo
 
-                // Treino B
-                Workout treinoB = new Workout();
-                treinoB.setName("Treino B - Costas e Bíceps");
-                treinoB.setDescription("Foco em puxar");
-                rotina.addWorkout(treinoB);
+                Workout pesoA = new Workout(null, "Treino A - Circuito Metabólico", "Alta intensidade, pouco descanso", null, rotinaPeso);
+                Workout pesoB = new Workout(null, "Treino B - Cardio Intenso", "Esteira e Corda", null, rotinaPeso);
+                rotinaPeso.addWorkout(pesoA);
+                rotinaPeso.addWorkout(pesoB);
+                routineRepository.save(rotinaPeso);
 
-                // Treino C
-                Workout treinoC = new Workout();
-                treinoC.setName("Treino C - Pernas e Ombros");
-                treinoC.setDescription("Foco em membros inferiores");
-                rotina.addWorkout(treinoC);
+                // --- ROTINA 3: CARDIORESPIRATÓRIO ---
+                Routine rotinaCardio = new Routine();
+                rotinaCardio.setName("Resistência & Fôlego");
+                rotinaCardio.setGoal("Cardiorespiratório"); // ID do objetivo
 
-                routineRepository.save(rotina);
-                System.out.println("✅ Rotina Padrão ABC criada!");
+                Workout cardioA = new Workout(null, "Treino A - Longa Distância", "Corrida leve e contínua", null, rotinaCardio);
+                Workout cardioB = new Workout(null, "Treino B - Natação/Bike", "Impacto reduzido", null, rotinaCardio);
+                rotinaCardio.addWorkout(cardioA);
+                rotinaCardio.addWorkout(cardioB);
+                routineRepository.save(rotinaCardio);
+
+                System.out.println("✅ 3 Rotinas criadas com sucesso!");
             }
         };
     }
