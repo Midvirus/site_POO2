@@ -31,4 +31,11 @@ public class RoutineController {
         routineService.deleteRoutine(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/search")
+    public Routine getByGoal(@RequestParam String goal) {
+        List<Routine> routines = routineRepository.findByGoal(goal);
+        if (routines.isEmpty()) return null;
+        return routines.get(0);
+    }
 }
