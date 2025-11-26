@@ -1,73 +1,59 @@
-# Welcome to your Lovable project
+# Bio Factor - Fitness Web App 💪🍎
 
-## Project info
+> Projeto desenvolvido para a disciplina de Programação Orientada a Objetos 2 (POO2).
 
-**URL**: https://lovable.dev/projects/03cc6179-a0d5-4166-b272-72c82c588789
+O **Bio Factor** é uma aplicação web completa voltada para o acompanhamento de saúde, dieta e treinos. O sistema funciona como um "coach virtual", permitindo que o usuário registre sua evolução, controle sua alimentação (macros) e gerencie suas rotinas de exercícios.
 
-## How can I edit this code?
+## 📋 Sobre o Projeto
 
-There are several ways of editing your application.
+O objetivo principal do sistema é auxiliar o usuário a alcançar metas de estética ou saúde através do monitoramento de dados. A aplicação permite:
+- Cálculo automático de métricas corporais (IMC, TMB, GET).
+- Registro diário de refeições e contagem de calorias/macros.
+- Gerenciamento de rotinas de treino (aeróbico e musculação).
+- Definição de metas e acompanhamento de progresso.
 
-**Use Lovable**
+## 🚀 Tecnologias Utilizadas
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/03cc6179-a0d5-4166-b272-72c82c588789) and start prompting.
+### Backend (API REST)
+- **Linguagem:** Java 17+
+- **Framework:** Spring Boot 3
+- **Banco de Dados:** PostgreSQL
+- **ORM:** Spring Data JPA
+- **Gerenciador de Dependências:** Maven
+- **Arquitetura:** MVC (Model-View-Controller) / Camadas
 
-Changes made via Lovable will be committed automatically to this repo.
+### Frontend (SPA)
+- **Framework:** React
+- **Linguagem:** TypeScript
+- **Build Tool:** Vite
+- **Estilização:** Tailwind CSS
+- **Componentes:** Shadcn/ui
+- **Gerenciador de Pacotes:** NPM / Bun
 
-**Use your preferred IDE**
+## ⚙️ Funcionalidades
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- **Autenticação de Usuário:** Cadastro e login.
+- **Perfil Biométrico:** Registro de peso, altura, idade e nível de atividade.
+- **Diário Alimentar:** Adição de refeições (café, almoço, janta) e alimentos com cálculo automático de Proteínas, Carbos e Gorduras.
+- **Gestão de Treinos:** Criação de rotinas personalizadas com exercícios específicos (séries, repetições, carga).
+- **Dashboard:** Visualização rápida do resumo do dia e evolução.
+- **Histórico de Peso:** Gráfico de evolução corporal.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 🔧 Como Rodar o Projeto
 
-Follow these steps:
+### Pré-requisitos
+Certifique-se de ter instalado:
+- Java JDK 17 ou superior
+- Node.js (v18+) ou Bun
+- PostgreSQL
+- Maven (opcional, pois o projeto inclui o wrapper `mvnw`)
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### 1. Configuração do Banco de Dados
+Crie um banco de dados no PostgreSQL com o nome `bio_factor` (ou ajuste no `application.properties`).
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/03cc6179-a0d5-4166-b272-72c82c588789) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+No arquivo `backend/src/main/resources/application.properties`, verifique suas credenciais:
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/bio_factor
+spring.datasource.username=seu_usuario
+spring.datasource.password=sua_senha
+spring.jpa.hibernate.ddl-auto=update
