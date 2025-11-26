@@ -124,11 +124,11 @@ const Auth = () => {
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="space-y-2 text-center">
           <div className="flex justify-center mb-2">
-            <div className="p-3 bg-primary rounded-full">
-              <Dumbbell className="h-8 w-8 text-primary-foreground" />
+            <div className="p-3 bg-white rounded-full max-w-[128px]">
+              <img src="./assets/logo.png"/>
             </div>
           </div>
-          <CardTitle className="text-3xl font-bold">Gestor de Academia</CardTitle>
+          <CardTitle className="text-3xl font-bold">Bio Factor</CardTitle>
           <CardDescription>Gerencie seus treinos, metas e alimentação</CardDescription>
         </CardHeader>
         <CardContent>
