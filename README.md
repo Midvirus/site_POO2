@@ -16,7 +16,7 @@ O objetivo principal do sistema é auxiliar o usuário a alcançar metas de est�
 
 ### Backend (API REST)
 - **Linguagem:** Java 17+
-- **Framework:** Spring Boot 3
+- **Framework:** Spring Boot 4
 - **Banco de Dados:** PostgreSQL
 - **ORM:** Spring Data JPA
 - **Gerenciador de Dependências:** Maven
