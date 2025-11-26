@@ -21,14 +21,13 @@ public class RoutineService {
     }
 
     public Routine saveRoutine(Routine routine) {
-        // Garante que os relacionamentos estão vinculados antes de salvar
+        // Garante a integridade dos relacionamentos antes de salvar
         if (routine.getWorkouts() != null) {
             for (Workout workout : routine.getWorkouts()) {
-                workout.setRoutine(routine); // Vincula Treino à Rotina
-                
+                workout.setRoutine(routine);
                 if (workout.getExercises() != null) {
                     for (Exercise exercise : workout.getExercises()) {
-                        exercise.setWorkout(workout); // Vincula Exercício ao Treino
+                        exercise.setWorkout(workout);
                     }
                 }
             }
@@ -43,11 +42,10 @@ public class RoutineService {
     public Optional<Routine> getRoutineById(Long id) {
         return routineRepository.findById(id);
     }
+
+    // Método que busca pelo objetivo (Chamado pelo Controller)
     public Routine getRoutineByGoal(String goal) {
-        // Busca todas as rotinas com esse objetivo
         List<Routine> routines = routineRepository.findByGoal(goal);
-        
-        // Se a lista não estiver vazia, retorna a primeira. Senão, retorna null.
         if (!routines.isEmpty()) {
             return routines.get(0);
         }
