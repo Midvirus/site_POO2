@@ -7,6 +7,8 @@ import com.poo2.bio_factor.model.Workout;
 import com.poo2.bio_factor.repository.FoodRepository;
 import com.poo2.bio_factor.repository.ExerciseRepository;
 import com.poo2.bio_factor.repository.RoutineRepository;
+import com.poo2.bio_factor.model.WeightEntry;
+import com.poo2.bio_factor.repository.WeightRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,7 +22,8 @@ public class DataSeeder {
     CommandLineRunner initDatabase(
             FoodRepository foodRepository,
             RoutineRepository routineRepository,
-            ExerciseRepository exerciseRepository) {
+            ExerciseRepository exerciseRepository,
+            WeightRepository weightRepository) {
         
         return args -> {
             
@@ -92,6 +95,33 @@ public class DataSeeder {
                 routineRepository.save(rotinaCardio);
 
                 System.out.println("✅ 3 Rotinas criadas com sucesso!");
+            }
+            // 4. HISTÓRICO DE PESO (Simulando um ano inteiro)
+            if (weightRepository.count() == 0) {
+                int anoAtual = java.time.LocalDate.now().getYear();
+                
+                weightRepository.saveAll(List.of(
+                    // Janeiro - Começou o ano
+                    new WeightEntry(null, java.time.LocalDate.of(anoAtual, 1, 10), 90.0),
+                    new WeightEntry(null, java.time.LocalDate.of(anoAtual, 1, 25), 89.5),
+                    
+                    // Fevereiro
+                    new WeightEntry(null, java.time.LocalDate.of(anoAtual, 2, 15), 88.0),
+                    
+                    // Março
+                    new WeightEntry(null, java.time.LocalDate.of(anoAtual, 3, 10), 87.2),
+                    
+                    // Abril
+                    new WeightEntry(null, java.time.LocalDate.of(anoAtual, 4, 5), 86.5),
+                    
+                    // Maio
+                    new WeightEntry(null, java.time.LocalDate.of(anoAtual, 5, 20), 86.0),
+                    
+                    // Dados recentes (últimos 30 dias)
+                    new WeightEntry(null, java.time.LocalDate.now().minusDays(15), 85.0),
+                    new WeightEntry(null, java.time.LocalDate.now(), 84.5)
+                ));
+                System.out.println("✅ Histórico anual criado!");
             }
         };
     }
