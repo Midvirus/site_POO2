@@ -32,9 +32,9 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon">
+              /*<Button variant="ghost" size="icon">
                 <User className="h-5 w-5" />
-              </Button>
+              </Button>*/
               <Button variant="ghost" size="icon" onClick={handleLogout}>
                 <LogOut className="h-5 w-5" />
               </Button>
