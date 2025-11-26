@@ -48,20 +48,41 @@ const Routine = () => {
 
   const fetchRoutineAndLibrary = async () => {
     try {
-      const routineRes = await fetch("http://localhost:8080/api/routines");
-      const routineData = await routineRes.json();
+      setLoading(true);
       
-      if (routineData.length > 0) {
-        setRotina(routineData[0]);
+      // 1. Pega o objetivo e mostra no console
+      const userGoal = localStorage.getItem("userGoal") || "Ganho de Massa";
+      console.log("🔍 FRONTEND: Buscando rotina para o objetivo:", userGoal);
+
+      // 2. Tenta buscar a específica
+      const searchUrl = `http://localhost:8080/api/routines/search?goal=${encodeURIComponent(userGoal)}`;
+      const routineRes = await fetch(searchUrl);
+      
+      // 3. Verifica se a resposta veio válida
+      const text = await routineRes.text(); // Pega como texto para não quebrar se vier vazio
+      
+      if (routineRes.ok && text && text.length > 2) { // >2 assume que não é "{}" ou "[]"
+        const routineData = JSON.parse(text);
+        console.log("FRONTEND: Encontrei a rotina:", routineData.name);
+        setRotina(routineData);
+      } else {
+        console.warn("FRONTEND: Rotina específica não encontrada. Usando fallback.");
+        // Se falhar, busca a lista completa e pega a primeira
+        const allRes = await fetch("http://localhost:8080/api/routines");
+        const allData = await allRes.json();
+        if (allData.length > 0) {
+            setRotina(allData[0]);
+            toast({ title: "Aviso", description: `Rotina para "${userGoal}" não encontrada. Mostrando padrão.`, variant: "destructive" });
+        }
       }
 
+      // 4. Biblioteca
       const exercisesRes = await fetch("http://localhost:8080/api/exercises/templates");
       const exercisesData = await exercisesRes.json();
       setBibliotecaExercicios(exercisesData);
 
     } catch (error) {
-      console.error("Erro ao carregar dados", error);
-      toast({ title: "Erro", description: "Falha ao carregar rotina.", variant: "destructive" });
+      console.error("ERRO FATAL:", error);
     } finally {
       setLoading(false);
     }
