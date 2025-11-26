@@ -19,5 +19,10 @@ public class ExerciseController {
     @GetMapping("/templates")
     public List<Exercise> getTemplates() {
         return exerciseRepository.findByWorkoutIsNull();
+
+   // Deleta Exercicios do treino
+   @DeleteMapping("/{id}")
+    public void deleteExercise(@PathVariable Long id) {
+        exerciseRepository.deleteById(id);
     }
 }
