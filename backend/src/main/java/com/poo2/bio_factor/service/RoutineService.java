@@ -43,4 +43,14 @@ public class RoutineService {
     public Optional<Routine> getRoutineById(Long id) {
         return routineRepository.findById(id);
     }
+    public Routine getRoutineByGoal(String goal) {
+        // Busca todas as rotinas com esse objetivo
+        List<Routine> routines = routineRepository.findByGoal(goal);
+        
+        // Se a lista não estiver vazia, retorna a primeira. Senão, retorna null.
+        if (!routines.isEmpty()) {
+            return routines.get(0);
+        }
+        return null;
+    }
 }
